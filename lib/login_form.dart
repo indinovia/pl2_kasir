@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({Key? key}) : super(key: key);
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -24,24 +26,26 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await Supabase.instance.client
-        .from('user')
-        .select('id, username')
-        .eq('username', username)
-        .eq('password', password)
-        .maybeSingle();
+          .from('user')
+          .select('id, username')
+          .eq('username', username)
+          .eq('password', password)
+          .maybeSingle();
 
       if (response != null) {
-        final userId = response['id'];
-        final userName = response['username'];
+        final userId = response['id'] as int;
+        final userName = response['username'] as String;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Selamat datang, $userName!')),
         );
 
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage(userId: userId)),
-        );
+  context,
+  MaterialPageRoute(
+    builder: (context) => HomeScreen(userId: userId, username: userName),
+  ),
+);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login gagal. Username atau password salah.')),
@@ -57,111 +61,158 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Center(
-        child: Container(
-          padding: const EdgeInsets.all(20.0),
-          width: 300,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.shade300,
-                blurRadius: 10.0,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.black,
-                child: Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Colors.white,
+      backgroundColor: Color(0xffffffff),
+      body: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 0, 0, 30),
+              child: Text(
+                "Login",
+                textAlign: TextAlign.start,
+                overflow: TextOverflow.clip,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.normal,
+                  fontSize: 25,
+                  color: Color(0xff000000),
                 ),
               ),
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: const Text(
-                  "Username",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 5),
-              TextField(
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+              child: TextField(
                 controller: _usernameController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.person, color: Colors.grey),
-                  hintText: "Username",
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                    borderSide: BorderSide.none,
-                  ),
+                obscureText: false,
+                textAlign: TextAlign.start,
+                maxLines: 1,
+                style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontStyle: FontStyle.normal,
+                  fontSize: 14,
+                  color: Color(0xff000000),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: const Text(
-                  "Password",
-                  style: TextStyle(
+                decoration: InputDecoration(
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Color(0xff000000), width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Color(0xff000000), width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Color(0xff000000), width: 1),
+                  ),
+                  labelText: "Username",
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.normal,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    color: Color(0xff000000),
                   ),
-                ),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock, color: Colors.grey),
-                  suffixIcon: const Icon(Icons.visibility, color: Colors.grey),
-                  hintText: "Password",
+                  hintText: "Username",
+                  hintStyle: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.normal,
+                    fontSize: 14,
+                    color: Color(0xff000000),
+                  ),
                   filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15.0),
-                    borderSide: BorderSide.none,
-                  ),
+                  fillColor: Color(0xfff2f2f3),
+                  isDense: false,
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  prefixIcon:
+                      Icon(Icons.person, color: Color(0xff212435), size: 24),
                 ),
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[700],
-                    padding: const EdgeInsets.symmetric(vertical: 15.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: TextField(
+                controller: _passwordController,
+                obscureText: false,
+                textAlign: TextAlign.start,
+                maxLines: 1,
+                style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontStyle: FontStyle.normal,
+                  fontSize: 14,
+                  color: Color(0xff000000),
+                ),
+                decoration: InputDecoration(
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Color(0xff000000), width: 1),
                   ),
-                  child: const Text(
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Color(0xff000000), width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Color(0xff000000), width: 1),
+                  ),
+                  labelText: "Password",
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.normal,
+                    fontSize: 14,
+                    color: Color(0xff000000),
+                  ),
+                  hintText: "Password",
+                  hintStyle: TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontStyle: FontStyle.normal,
+                    fontSize: 14,
+                    color: Color(0xff000000),
+                  ),
+                  filled: true,
+                  fillColor: Color(0xfff2f2f3),
+                  isDense: false,
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  prefixIcon:
+                      Icon(Icons.lock, color: Color(0xff212435), size: 24),
+                  suffixIcon: Icon(Icons.visibility_off,
+                      color: Color(0xff212435), size: 24),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
+              child: Align(
+                alignment: Alignment(0.0, 0.2),
+                child: MaterialButton(
+                  onPressed: _login,
+                  color: Color(0xff614817),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                    side: BorderSide(color: Color(0xff808080), width: 1),
+                  ),
+                  padding: EdgeInsets.all(16),
+                  child: Text(
                     "Login",
                     style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontStyle: FontStyle.normal,
                     ),
                   ),
+                  textColor: Color(0xffffffff),
+                  height: 40,
+                  minWidth: 140,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

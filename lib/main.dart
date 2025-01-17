@@ -1,32 +1,25 @@
-import 'package:flutter/material.dart'; // Import paket Flutter untuk membuat UI aplikasi berbasis Material Design.
-import 'package:supabase_flutter/supabase_flutter.dart'; 
-// Import paket Supabase untuk menghubungkan aplikasi ke backend Supabase.
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'login_form.dart';
 
-import 'login_form.dart'; 
-// Import file "login_form.dart" yang kemungkinan berisi kode untuk halaman login.
-
-Future<void> main() async { 
-  // Fungsi utama aplikasi, dijalankan pertama kali saat aplikasi dibuka.
+Future<void> main() async {
   await Supabase.initialize(
-    url: 'https://onajubbxgwyxxszegyhn.supabase.co', 
-    // Alamat URL proyek Supabase.
-    anonKey: '...', 
-    // Kunci anon untuk autentikasi ke Supabase.
+    url: 'https://onajubbxgwyxxszegyhn.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uYWp1YmJ4Z3d5eHhzemVneWhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMzIwODUsImV4cCI6MjA1MTcwODA4NX0.G2n2dlmLVR_AWQmKddqQtM0igcHA7X9VIVR3bqTWVpw',
   );
-  runApp(MyApp()); 
-  // Memulai aplikasi dengan widget utama bernama MyApp.
+  runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget { 
-  // Widget utama aplikasi, bersifat statis (tidak berubah saat aplikasi berjalan).
+class MyApp extends StatelessWidget {
   @override
-  Widget build(BuildContext context) { 
-    // Fungsi untuk membangun UI dari widget ini.
+  Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, 
-      // Menyembunyikan tulisan "Debug" di pojok kanan atas aplikasi.
-      home: LoginPage(), 
-      // Menampilkan halaman LoginPage sebagai layar utama aplikasi.
+      title: 'Flutter CRUD App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      debugShowCheckedModeBanner: false,
+      home: LoginPage(),
     );
   }
 }
