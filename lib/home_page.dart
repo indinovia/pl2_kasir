@@ -14,7 +14,7 @@ class HomePage extends StatelessWidget {
       ),
       body: Center(
         child: Text(
-          'Selamat datang $User',
+          'Selamat Datang',
           style: const TextStyle(fontSize: 18),
         ),
       ),
