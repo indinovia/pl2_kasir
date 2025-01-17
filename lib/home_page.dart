@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:pl2_kasir/customer_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_form.dart'; // Import halaman login
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key, required int userId, required String username}) : super(key: key);
+  const HomeScreen({Key? key, required int userId, required String username})
+      : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -14,7 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> products = [];
   bool isLoading = true;
   int _currentIndex = 0;
- 
+
   @override
   void initState() {
     super.initState();
@@ -47,7 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _updateProduct(int id, String namaProduk, double harga, int stok) async {
+  Future<void> _updateProduct(
+      int id, String namaProduk, double harga, int stok) async {
     try {
       await supabase.from('produk').update({
         'nama_produk': namaProduk,
@@ -68,7 +71,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _deleteProduct(int id) async {
     try {
-      await supabase.from('produk').delete().eq('produk_id', id); // Hapus berdasarkan ID
+      await supabase
+          .from('produk')
+          .delete()
+          .eq('produk_id', id); // Hapus berdasarkan ID
       await _fetchProducts(); // Refresh data produk
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +108,9 @@ class _HomeScreenState extends State<HomeScreen> {
             : GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width > 600 ? 5 : 2, // Menyesuaikan jumlah kolom berdasarkan lebar layar
+                  crossAxisCount: MediaQuery.of(context).size.width > 600
+                      ? 5
+                      : 2, // Menyesuaikan jumlah kolom berdasarkan lebar layar
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                   childAspectRatio: 1.0, // Proporsi kotak (lebar:tinggi = 1:1)
@@ -204,7 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton(
               onPressed: () {
                 final String namaProduk = namaProdukController.text;
-                final double harga = double.tryParse(hargaController.text) ?? 0.0;
+                final double harga =
+                    double.tryParse(hargaController.text) ?? 0.0;
                 final int stok = int.tryParse(stokController.text) ?? 0;
 
                 if (namaProduk.isNotEmpty && harga > 0 && stok >= 0) {
@@ -285,8 +294,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text(
           "Kasir",
           style: TextStyle(
-            fontWeight: FontWeight.bold
-            ),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         foregroundColor: Colors.white,
         backgroundColor: const Color(0xff614817),
@@ -301,14 +310,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (_) => const LoginPage()),
               );
             },
-          )
+          ),
         ],
       ),
       body: _currentIndex == 0
           ? _buildHomePage()
           : _currentIndex == 1
               ? _buildAddProductPage()
-              : _buildProfilePage(),
+              : _currentIndex == 2
+                  ? _buildCustomerPage() // Fungsi untuk membangun CustomerPage
+                  : _buildProfilePage(), // Atau halaman lainnya yang sesuai
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -316,6 +327,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -327,10 +340,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profile',
+            label: 'Pelanggan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt),
+            label: 'Transaksi',
           ),
         ],
       ),
     );
+  }
+
+// Fungsi untuk membangun halaman pelanggan
+  Widget _buildCustomerPage() {
+    return CustomerPage(); // Atau widget yang sesuai untuk halaman pelanggan
   }
 }
