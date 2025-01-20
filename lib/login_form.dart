@@ -19,7 +19,8 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Username dan password tidak boleh kosong.')),
+        const SnackBar(
+            content: Text('Username dan password tidak boleh kosong.')),
       );
       return;
     }
@@ -41,14 +42,16 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (context) => HomeScreen(userId: userId, username: userName),
-  ),
-);
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                HomeScreen(userId: userId, username: userName),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login gagal. Username atau password salah.')),
+          const SnackBar(
+              content: Text('Login gagal. Username atau password salah.')),
         );
       }
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pl2_kasir/customer_page.dart';
+import 'package:pl2_kasir/transaction_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_form.dart'; // Import halaman login
 
@@ -278,14 +279,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProfilePage() {
-    return const Center(
-      child: Text(
-        'Halaman Transaksi',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-    );
+   Widget _buildTransactionPage() {
+   return TransactionPage();
   }
+
+  // Fungsi untuk halaman lainnya tetap sama...
 
   @override
   Widget build(BuildContext context) {
@@ -318,8 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
           : _currentIndex == 1
               ? _buildAddProductPage()
               : _currentIndex == 2
-                  ? _buildCustomerPage() // Fungsi untuk membangun CustomerPage
-                  : _buildProfilePage(), // Atau halaman lainnya yang sesuai
+                  ? _buildCustomerPage() // Halaman pelanggan
+                  : _buildTransactionPage(), // Halaman transaksi
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -350,9 +348,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
 
 // Fungsi untuk membangun halaman pelanggan
   Widget _buildCustomerPage() {
     return CustomerPage(); // Atau widget yang sesuai untuk halaman pelanggan
   }
-}
+
