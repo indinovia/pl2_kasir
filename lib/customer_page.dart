@@ -53,7 +53,7 @@ class _CustomerPageState extends State<CustomerPage> {
         'nama_pelanggan': nama,
         'alamat': alamat,
         'nomor_telepon': nomorTelepon,
-      }).eq('pelanggan_id', id);
+      }).eq('pelanggan_id', id) ;
       _fetchCustomers();
     } catch (e) {
       _showError('Failed to update customer: $e');
