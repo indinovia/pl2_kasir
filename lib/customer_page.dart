@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CustomerPage extends StatefulWidget {
-  const CustomerPage({Key? key}) : super(key: key);
+  const CustomerPage({Key? key, required Null Function() onCustomerUpdated}) : super(key: key);
 
   @override
   _CustomerPageState createState() => _CustomerPageState();

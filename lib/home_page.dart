@@ -322,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;
+            _currentIndex = index;  
           });
         },
         selectedItemColor: Colors.black,
@@ -352,6 +352,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // Fungsi untuk membangun halaman pelanggan
   Widget _buildCustomerPage() {
-    return CustomerPage(); // Atau widget yang sesuai untuk halaman pelanggan
+    return CustomerPage(onCustomerUpdated: () {  },); // Atau widget yang sesuai untuk halaman pelanggan
   }
 
