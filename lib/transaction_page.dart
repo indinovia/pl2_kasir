@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TransactionPage extends StatefulWidget {
-  const TransactionPage({Key? key}) : super(key: key);
+  final int userId;
+  final String username;
+
+  const TransactionPage({
+    Key? key,
+    required this.userId,
+    required this.username,
+  }) : super(key: key);
 
   @override
   _TransactionPageState createState() => _TransactionPageState();
@@ -15,6 +22,7 @@ class _TransactionPageState extends State<TransactionPage> {
   List<Map<String, dynamic>> cart = [];
   Map<String, dynamic>? selectedCustomer;
   bool isLoading = true;
+  bool isPaymentPage = false;
 
   @override
   void initState() {
@@ -48,6 +56,89 @@ class _TransactionPageState extends State<TransactionPage> {
       return;
     }
 
+    setState(() {
+      isPaymentPage = true;
+    });
+  }
+
+void _showReceipt(double totalHarga, String customerName) {
+  final DateTime now = DateTime.now();
+  final String formattedDate = "${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}:${now.second}";
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Struk Pembayaran', textAlign: TextAlign.center),
+        content: Container(
+          width: double.maxFinite,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Text(
+                  'INOV CAFE',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const Divider(),
+              Center(child: Text('Struk Pembayaran', style: TextStyle(fontSize: 16))),
+              const Divider(),
+              Text('Nama Pelanggan: $customerName'),
+              const SizedBox(height: 8),
+              Text('Tanggal: $formattedDate'),
+              const SizedBox(height: 10),
+              const Divider(),
+              ...cart.map((item) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${item['nama_produk']}'),
+                    Text('Qty: ${item['jumlah']}'),
+                    Text('Rp. ${item['subtotal']}'),
+                  ],
+                ),
+              )),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total:'),
+                    Text(
+                      'Rp. $totalHarga',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              const SizedBox(height: 10),
+              Center(child: Text('Terima kasih atas kunjungannya!', style: TextStyle(fontStyle: FontStyle.italic))),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+  void _completePayment() async {
     try {
       final totalHarga = cart.fold(0.0, (sum, item) => sum + item['subtotal']);
       final penjualanResponse = await supabase.from('penjualan').insert({
@@ -71,17 +162,17 @@ class _TransactionPageState extends State<TransactionPage> {
         }).eq('produk_id', item['produk_id']);
       }
 
+      final customerName = selectedCustomer!['nama_pelanggan'];
+
       setState(() {
         cart.clear();
         selectedCustomer = null;
+        isPaymentPage = false;
       });
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => SalesHistoryPage()),
-      );
+      _showReceipt(totalHarga, customerName);
     } catch (e) {
-      _showError('Failed to submit transaction: $e');
+      _showError('Failed to complete transaction: $e');
     }
   }
 
@@ -101,136 +192,192 @@ class _TransactionPageState extends State<TransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        backgroundColor: const Color.fromARGB(0, 150, 0, 125),
+        title: const Text('Kasir - Transaksi'),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButton<Map<String, dynamic>>(
-                    value: selectedCustomer,
-                    hint: const Text('Select Customer'),
-                    items: customers.map((customer) {
-                      return DropdownMenuItem(
-                        value: customer,
-                        child: Text(customer['nama_pelanggan']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedCustomer = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Products:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return ListTile(
-                          title: Text(product['nama_produk']),
-                          subtitle: Text(
-                              'Stock: ${product['stok']} | Price: Rp. ${product['harga']}'),
-                          trailing: ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                cart.add({
-                                  'produk_id': product['produk_id'],
-                                  'nama_produk': product['nama_produk'],
-                                  'jumlah': 1,
-                                  'harga': product['harga'],
-                                  'subtotal': product['harga'],
-                                  'stok': product['stok'],
-                                });
-                              });
-                            },
-                            child: const Text('Add'),
-                          ),
-                        );
-                      },
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isPaymentPage)
+                      DropdownButton<Map<String, dynamic>>(
+                        value: selectedCustomer,
+                        hint: const Text('Pilih Pelanggan'),
+                        items: customers.map((customer) {
+                          return DropdownMenuItem(
+                            value: customer,
+                            child: Text(customer['nama_pelanggan']),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedCustomer = value;
+                          });
+                        },
+                      ),
+                    const SizedBox(height: 16),
+                    if (!isPaymentPage)
+                      const Text(
+                        'Produk:',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    if (!isPaymentPage)
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return Card(
+                            elevation: 5,
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              title: Text(product['nama_produk']),
+                              subtitle: Text(
+                                  'Stok: ${product['stok']} | Harga: Rp. ${product['harga']}'),
+                              trailing: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(
+                                      255, 255, 183, 247),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    cart.add({
+                                      'produk_id': product['produk_id'],
+                                      'nama_produk': product['nama_produk'],
+                                      'jumlah': 1,
+                                      'harga': product['harga'],
+                                      'subtotal': product['harga'],
+                                      'stok': product['stok'],
+                                    });
+                                  });
+                                },
+                                child: const Text('Tambah'),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Keranjang Belanja:',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 18),
                     ),
-                  ),
-                  const Text('Cart:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Expanded(
-                    child: ListView.builder(
+                    const SizedBox(height: 8),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: cart.length,
                       itemBuilder: (context, index) {
                         final item = cart[index];
-                        return ListTile(
-                          title: Text(item['nama_produk']),
-                          subtitle: Text(
-                              'Qty: ${item['jumlah']} | Subtotal: Rp. ${item['subtotal']}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove),
-                                onPressed: () => _updateCartQuantity(index, -1),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () => _updateCartQuantity(index, 1),
-                              ),
-                            ],
+                        return Card(
+                          elevation: 5,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: ListTile(
+                            title: Text(item['nama_produk']),
+                            subtitle: Text(
+                                'Qty: ${item['jumlah']} | Subtotal: Rp. ${item['subtotal']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove),
+                                  onPressed: () =>
+                                      _updateCartQuantity(index, -1),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add),
+                                  onPressed: () =>
+                                      _updateCartQuantity(index, 1),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: _submitTransaction,
-                    child: const Text('Checkout'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    if (!isPaymentPage)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 255, 183, 247),
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          minimumSize:
+                              const Size(200, 50),
+                        ),
+                        onPressed: _submitTransaction,
+                        child: const Text(
+                          'Proses Pembayaran',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    if (isPaymentPage)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Ringkasan Pembayaran:',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          const SizedBox(height: 16),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: cart.length,
+                            itemBuilder: (context, index) {
+                              final item = cart[index];
+                              return ListTile(
+                                title: Text(item['nama_produk']),
+                                subtitle: Text(
+                                    'Qty: ${item['jumlah']} | Subtotal: Rp. ${item['subtotal']}'),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Total Pembayaran: Rp. ${cart.fold(0.0, (sum, item) => sum + item['subtotal'])}',
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 32),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  const Color.fromARGB(255, 255, 183, 247),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize:
+                                  const Size(200, 50),
+                            ),
+                            onPressed: _completePayment,
+                            child: const Text('Selesaikan Pembayaran'),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
-    );
-  }
-}
-
-class SalesHistoryPage extends StatefulWidget {
-  @override
-  _SalesHistoryPageState createState() => _SalesHistoryPageState();
-}
-
-class _SalesHistoryPageState extends State<SalesHistoryPage> {
-  final SupabaseClient supabase = Supabase.instance.client;
-  List<Map<String, dynamic>> transactions = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchTransactions();
-  }
-
-  Future<void> _fetchTransactions() async {
-    final response = await supabase.from('penjualan').select();
-    setState(() {
-      transactions = List<Map<String, dynamic>>.from(response);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sales History')),
-      body: ListView.builder(
-        itemCount: transactions.length,
-        itemBuilder: (context, index) {
-          final transaction = transactions[index];
-          return ListTile(
-            title: Text('Total: Rp. ${transaction['total_harga']}'),
-            subtitle: Text('Date: ${transaction['tanggal_penjualan']}'),
-          );
-        },
-      ),
     );
   }
 }
