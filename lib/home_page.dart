@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchProducts();
-  }
+  }  
 
   Future<void> _fetchProducts() async {
     try {
@@ -57,9 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
         'nama_produk': namaProduk,
         'harga': harga,
         'stok': stok,
-      }).eq('produk_id', id); // Update berdasarkan ID
+      }).eq('produk_id', id);
 
-      await _fetchProducts(); // Refresh data produk
+      await _fetchProducts();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Produk berhasil diperbarui')),
       );
@@ -72,12 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _deleteProduct(int id) async {
     try {
-      await supabase
-          .from('produk')
-          .delete()
-          .eq('produk_id', id); // Hapus berdasarkan ID
-      await _fetchProducts(); // Refresh data produk
-
+      await supabase.from('produk').delete().eq('produk_id', id);
+      await _fetchProducts();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Produk berhasil dihapus')),
       );
@@ -88,6 +84,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _confirmDeleteProduct(int id) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: const Text('Apakah Anda yakin ingin menghapus produk ini?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Tutup dialog
+              },
+              child: const Text('Tidak'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context); // Tutup dialog
+                await _deleteProduct(id); // Hapus produk jika dikonfirmasi
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Iya'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -95,89 +121,165 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomePage() {
-    return isLoading
-        ? const Center(
-            child: CircularProgressIndicator(),
-          )
-        : products.isEmpty
+    return Stack(
+      children: [
+        isLoading
             ? const Center(
-                child: Text(
-                  'No products found!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                child: CircularProgressIndicator(),
               )
-            : GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width > 600
-                      ? 5
-                      : 2, // Menyesuaikan jumlah kolom berdasarkan lebar layar
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 1.0, // Proporsi kotak (lebar:tinggi = 1:1)
-                ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+            : products.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No products found!',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            product['nama_produk'] ?? 'Unknown',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Rp${product['harga']}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text('Stok: ${product['stok']}'),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: MediaQuery.of(context).size.width > 600
+                          ? 5
+                          : 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  // Panggil halaman edit produk
-                                  _editProductDialog(product['produk_id']);
-                                },
+                              Text(
+                                product['nama_produk'] ?? 'Unknown',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  _deleteProduct(product['produk_id']);
-                                },
+                              const SizedBox(height: 8),
+                              Text(
+                                'Rp${product['harga']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text('Stok: ${product['stok']}'),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    onPressed: () {
+                                      _editProductDialog(product);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {
+                                      _confirmDeleteProduct(
+                                          product['produk_id']);
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
+                        ),
+                      );
+                    },
+                  ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            backgroundColor: const Color.fromARGB(255, 255, 178, 240),
+            onPressed: _addProductDialog,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
   }
 
-  void _editProductDialog(int productId) {
+  void _addProductDialog() {
     final TextEditingController namaProdukController = TextEditingController();
     final TextEditingController hargaController = TextEditingController();
     final TextEditingController stokController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Tambah Produk'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: namaProdukController,
+                decoration: const InputDecoration(labelText: 'Nama Produk'),
+              ),
+              TextField(
+                controller: hargaController,
+                decoration: const InputDecoration(labelText: 'Harga'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: stokController,
+                decoration: const InputDecoration(labelText: 'Stok'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final String namaProduk = namaProdukController.text;
+                final double harga =
+                    double.tryParse(hargaController.text) ?? 0.0;
+                final int stok = int.tryParse(stokController.text) ?? 0;
+
+                if (namaProduk.isNotEmpty && harga > 0 && stok >= 0) {
+                  _addProduct(namaProduk, harga, stok);
+                  Navigator.pop(context);
+                } else {
+                  _showError('Mohon isi data dengan benar.');
+                }
+              },
+              child: const Text('Tambah Produk'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _editProductDialog(Map<String, dynamic> product) {
+    final TextEditingController namaProdukController =
+        TextEditingController(text: product['nama_produk']);
+    final TextEditingController hargaController =
+        TextEditingController(text: product['harga'].toString());
+    final TextEditingController stokController =
+        TextEditingController(text: product['stok'].toString());
 
     showDialog(
       context: context,
@@ -213,18 +315,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton(
               onPressed: () {
                 final String namaProduk = namaProdukController.text;
-                final double harga =
-                    double.tryParse(hargaController.text) ?? 0.0;
+                final double harga = double.tryParse(hargaController.text) ?? 0.0;
                 final int stok = int.tryParse(stokController.text) ?? 0;
 
                 if (namaProduk.isNotEmpty && harga > 0 && stok >= 0) {
-                  _updateProduct(productId, namaProduk, harga, stok);
+                  _updateProduct(product['produk_id'], namaProduk, harga, stok);
                   Navigator.pop(context);
                 } else {
                   _showError('Mohon isi data dengan benar.');
                 }
               },
-              child: const Text('Perbarui Produk'),
+              child: const Text('Simpan Perubahan'),
             ),
           ],
         );
@@ -232,58 +333,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAddProductPage() {
-    final TextEditingController namaProdukController = TextEditingController();
-    final TextEditingController hargaController = TextEditingController();
-    final TextEditingController stokController = TextEditingController();
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TextField(
-            controller: namaProdukController,
-            decoration: const InputDecoration(labelText: 'Nama Produk'),
-          ),
-          TextField(
-            controller: hargaController,
-            decoration: const InputDecoration(labelText: 'Harga'),
-            keyboardType: TextInputType.number,
-          ),
-          TextField(
-            controller: stokController,
-            decoration: const InputDecoration(labelText: 'Stok'),
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              final String namaProduk = namaProdukController.text;
-              final double harga = double.tryParse(hargaController.text) ?? 0.0;
-              final int stok = int.tryParse(stokController.text) ?? 0;
-
-              if (namaProduk.isNotEmpty && harga > 0 && stok >= 0) {
-                _addProduct(namaProduk, harga, stok);
-                setState(() {
-                  _currentIndex = 0;
-                });
-              } else {
-                _showError('Mohon isi data dengan benar.');
-              }
-            },
-            child: const Text('Tambah Produk'),
-          ),
-        ],
-      ),
-    );
+  Widget _buildCustomerPage() {
+    return CustomerPage(onCustomerUpdated: () {});
   }
 
-   Widget _buildTransactionPage() {
-   return TransactionPage();
+  Widget _buildTransactionPage() {
+    return TransactionPage();
   }
-
-  // Fungsi untuk halaman lainnya tetap sama...
 
   @override
   Widget build(BuildContext context) {
@@ -296,12 +352,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         foregroundColor: Colors.white,
-        backgroundColor: const Color(0xff614817),
+        backgroundColor: const Color.fromARGB(255, 148, 46, 136),
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () async {
-              // Logout function
               await supabase.auth.signOut();
               Navigator.pushReplacement(
                 context,
@@ -314,15 +369,18 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _currentIndex == 0
           ? _buildHomePage()
           : _currentIndex == 1
-              ? _buildAddProductPage()
-              : _currentIndex == 2
-                  ? _buildCustomerPage() // Halaman pelanggan
-                  : _buildTransactionPage(), // Halaman transaksi
+              ? _buildCustomerPage()
+              : _buildTransactionPage(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;  
+            _currentIndex = index;
+
+            // Refresh the selected page
+            if (_currentIndex == 0) {
+              _fetchProducts(); // Refresh products when Home is selected
+            }
           });
         },
         selectedItemColor: Colors.black,
@@ -333,11 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add),
-            label: 'Tambah Produk',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person), 
             label: 'Pelanggan',
           ),
           BottomNavigationBarItem(
@@ -349,9 +403,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-// Fungsi untuk membangun halaman pelanggan
-  Widget _buildCustomerPage() {
-    return CustomerPage(onCustomerUpdated: () {  },); // Atau widget yang sesuai untuk halaman pelanggan
-  }
-

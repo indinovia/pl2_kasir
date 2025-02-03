@@ -66,15 +66,6 @@ class _TransactionPageState extends State<TransactionPage> {
           'subtotal': item['subtotal'],
         });
 
-        // Update stock directly in the products list
-        setState(() {
-          final productIndex =
-              products.indexWhere((p) => p['produk_id'] == item['produk_id']);
-          if (productIndex != -1) {
-            products[productIndex]['stok'] -= item['jumlah'];
-          }
-        });
-
         await supabase.from('produk').update({
           'stok': item['stok'] - item['jumlah'],
         }).eq('produk_id', item['produk_id']);
@@ -85,54 +76,25 @@ class _TransactionPageState extends State<TransactionPage> {
         selectedCustomer = null;
       });
 
-      _showError('Transaction successfully recorded!');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SalesHistoryPage()),
+      );
     } catch (e) {
       _showError('Failed to submit transaction: $e');
     }
   }
 
-  void _addToCart(Map<String, dynamic> product) {
-    final TextEditingController quantityController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Add ${product['nama_produk']} to Cart'),
-          content: TextField(
-            controller: quantityController,
-            decoration: const InputDecoration(labelText: 'Quantity'),
-            keyboardType: TextInputType.number,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final int quantity = int.tryParse(quantityController.text) ?? 0;
-                if (quantity > 0 && quantity <= product['stok']) {
-                  setState(() {
-                    cart.add({
-                      'produk_id': product['produk_id'],
-                      'nama_produk': product['nama_produk'],
-                      'jumlah': quantity,
-                      'subtotal': product['harga'] * quantity,
-                      'stok': product['stok'],
-                    });
-                  });
-                  Navigator.pop(context);
-                } else {
-                  _showError('Invalid quantity');
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
+  void _updateCartQuantity(int index, int change) {
+    setState(() {
+      final newQuantity = cart[index]['jumlah'] + change;
+      if (newQuantity > 0 && newQuantity <= cart[index]['stok']) {
+        cart[index]['jumlah'] = newQuantity;
+        cart[index]['subtotal'] = cart[index]['harga'] * newQuantity;
+      } else if (newQuantity == 0) {
+        cart.removeAt(index);
+      }
+    });
   }
 
   @override
@@ -145,34 +107,29 @@ class _TransactionPageState extends State<TransactionPage> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Dropdown Pilihan Pelanggan
-                    DropdownButton<Map<String, dynamic>>(
-                      value: selectedCustomer,
-                      hint: const Text('Select Customer'),
-                      items: customers.map((customer) {
-                        return DropdownMenuItem(
-                          value: customer,
-                          child: Text(customer['nama_pelanggan']),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedCustomer = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Daftar Produk
-                    const Text('Products:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButton<Map<String, dynamic>>(
+                    value: selectedCustomer,
+                    hint: const Text('Select Customer'),
+                    items: customers.map((customer) {
+                      return DropdownMenuItem(
+                        value: customer,
+                        child: Text(customer['nama_pelanggan']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCustomer = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Products:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: ListView.builder(
                       itemCount: products.length,
                       itemBuilder: (context, index) {
                         final product = products[index];
@@ -181,43 +138,99 @@ class _TransactionPageState extends State<TransactionPage> {
                           subtitle: Text(
                               'Stock: ${product['stok']} | Price: Rp. ${product['harga']}'),
                           trailing: ElevatedButton(
-                            onPressed: () => _addToCart(product),
+                            onPressed: () {
+                              setState(() {
+                                cart.add({
+                                  'produk_id': product['produk_id'],
+                                  'nama_produk': product['nama_produk'],
+                                  'jumlah': 1,
+                                  'harga': product['harga'],
+                                  'subtotal': product['harga'],
+                                  'stok': product['stok'],
+                                });
+                              });
+                            },
                             child: const Text('Add'),
                           ),
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
-
-                    // Keranjang Belanja
-                    const Text('Cart:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    cart.isEmpty
-                        ? const Text('No items in cart.')
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: cart.length,
-                            itemBuilder: (context, index) {
-                              final item = cart[index];
-                              return ListTile(
-                                title: Text(item['nama_produk']),
-                                subtitle: Text(
-                                    'Qty: ${item['jumlah']} | Subtotal: Rp. ${item['subtotal']}'),
-                              );
-                            },
+                  ),
+                  const Text('Cart:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: cart.length,
+                      itemBuilder: (context, index) {
+                        final item = cart[index];
+                        return ListTile(
+                          title: Text(item['nama_produk']),
+                          subtitle: Text(
+                              'Qty: ${item['jumlah']} | Subtotal: Rp. ${item['subtotal']}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: () => _updateCartQuantity(index, -1),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => _updateCartQuantity(index, 1),
+                              ),
+                            ],
                           ),
-                    const SizedBox(height: 16),
-
-                    // Tombol Submit Transaksi
-                    ElevatedButton(
-                      onPressed: _submitTransaction,
-                      child: const Text('Submit Transaction'),
+                        );
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                  ElevatedButton(
+                    onPressed: _submitTransaction,
+                    child: const Text('Checkout'),
+                  ),
+                ],
               ),
             ),
+    );
+  }
+}
+
+class SalesHistoryPage extends StatefulWidget {
+  @override
+  _SalesHistoryPageState createState() => _SalesHistoryPageState();
+}
+
+class _SalesHistoryPageState extends State<SalesHistoryPage> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> transactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTransactions();
+  }
+
+  Future<void> _fetchTransactions() async {
+    final response = await supabase.from('penjualan').select();
+    setState(() {
+      transactions = List<Map<String, dynamic>>.from(response);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sales History')),
+      body: ListView.builder(
+        itemCount: transactions.length,
+        itemBuilder: (context, index) {
+          final transaction = transactions[index];
+          return ListTile(
+            title: Text('Total: Rp. ${transaction['total_harga']}'),
+            subtitle: Text('Date: ${transaction['tanggal_penjualan']}'),
+          );
+        },
+      ),
     );
   }
 }

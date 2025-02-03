@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CustomerPage extends StatefulWidget {
-  const CustomerPage({Key? key, required Null Function() onCustomerUpdated}) : super(key: key);
+  final VoidCallback onCustomerUpdated;
+
+  const CustomerPage({Key? key, required this.onCustomerUpdated})
+      : super(key: key);
 
   @override
   _CustomerPageState createState() => _CustomerPageState();
@@ -32,15 +35,15 @@ class _CustomerPageState extends State<CustomerPage> {
   }
 
   Future<void> _addCustomer(
-      int id, String nama, String alamat, String nomorTelepon) async {
+      String nama, String alamat, String nomorTelepon) async {
     try {
       await supabase.from('pelanggan').insert({
-        'pelanggan_id': id,
         'nama_pelanggan': nama,
         'alamat': alamat,
         'nomor_telepon': nomorTelepon,
       });
       _fetchCustomers();
+      widget.onCustomerUpdated(); // Panggil callback
     } catch (e) {
       _showError('Failed to add customer: $e');
     }
@@ -53,19 +56,46 @@ class _CustomerPageState extends State<CustomerPage> {
         'nama_pelanggan': nama,
         'alamat': alamat,
         'nomor_telepon': nomorTelepon,
-      }).eq('pelanggan_id', id) ;
+      }).eq('pelanggan_id', id);
       _fetchCustomers();
+      widget.onCustomerUpdated(); // Panggil callback
     } catch (e) {
       _showError('Failed to update customer: $e');
     }
   }
 
-  Future<void> _deleteCustomer(int id) async {
-    try {
-      await supabase.from('pelanggan').delete().eq('pelanggan_id', id);
-      _fetchCustomers();
-    } catch (e) {
-      _showError('Failed to delete customer: $e');
+  Future<void> _confirmDeleteCustomer(int id) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi'),
+          content: const Text('Apakah Anda yakin ingin menghapus pelanggan ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), // Tidak jadi hapus
+              child: const Text('Tidak'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true), // Lanjutkan hapus
+              child: const Text('Ya'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      try {
+        await supabase.from('pelanggan').delete().eq('pelanggan_id', id);
+        _fetchCustomers();
+        widget.onCustomerUpdated(); // Panggil callback
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pelanggan berhasil dihapus')),
+        );
+      } catch (e) {
+        _showError('Gagal menghapus pelanggan: $e');
+      }
     }
   }
 
@@ -83,15 +113,17 @@ class _CustomerPageState extends State<CustomerPage> {
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   columns: const [
-                    DataColumn(label: Text('ID')),
+                    DataColumn(label: Text('No.')), // Perubahan di sini
                     DataColumn(label: Text('Nama')),
                     DataColumn(label: Text('Alamat')),
                     DataColumn(label: Text('Nomor Telepon')),
                     DataColumn(label: Text('Actions')),
                   ],
-                  rows: customers.map((customer) {
+                  rows: customers.asMap().entries.map((entry) {
+                    final index = entry.key + 1; // Nomor urut
+                    final customer = entry.value;
                     return DataRow(cells: [
-                      DataCell(Text(customer['pelanggan_id'].toString())),
+                      DataCell(Text(index.toString())), // Ganti ID dengan nomor
                       DataCell(Text(customer['nama_pelanggan'])),
                       DataCell(Text(customer['alamat'])),
                       DataCell(Text(customer['nomor_telepon'])),
@@ -103,7 +135,8 @@ class _CustomerPageState extends State<CustomerPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete),
-                            onPressed: () => _deleteCustomer(customer['pelanggan_id']),
+                            onPressed: () =>
+                                _confirmDeleteCustomer(customer['pelanggan_id']),
                           ),
                         ],
                       )),
@@ -111,68 +144,6 @@ class _CustomerPageState extends State<CustomerPage> {
                   }).toList(),
                 ),
               );
-  }
-
-  void _editCustomerDialog(Map<String, dynamic> customer) {
-    final TextEditingController idController =
-        TextEditingController(text: customer['pelanggan_id'].toString());
-    final TextEditingController namaController =
-        TextEditingController(text: customer['nama_pelanggan']);
-    final TextEditingController alamatController =
-        TextEditingController(text: customer['alamat']);
-    final TextEditingController nomorTeleponController =
-        TextEditingController(text: customer['nomor_telepon']);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Customer'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: idController,
-                decoration: const InputDecoration(labelText: 'ID Pelanggan'),
-                keyboardType: TextInputType.number,
-                enabled: false,
-              ),
-              TextField(
-                controller: namaController,
-                decoration: const InputDecoration(labelText: 'Nama'),
-              ),
-              TextField(
-                controller: alamatController,
-                decoration: const InputDecoration(labelText: 'Alamat'),
-              ),
-              TextField(
-                controller: nomorTeleponController,
-                decoration: const InputDecoration(labelText: 'Nomor Telepon'),
-                keyboardType: TextInputType.phone,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _updateCustomer(
-                  int.parse(idController.text),
-                  namaController.text,
-                  alamatController.text,
-                  nomorTeleponController.text,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -189,13 +160,13 @@ class _CustomerPageState extends State<CustomerPage> {
         onPressed: () {
           _addCustomerDialog();
         },
+        backgroundColor: const Color.fromARGB(255, 255, 178, 240),
         child: const Icon(Icons.add),
       ),
     );
   }
 
   void _addCustomerDialog() {
-    final TextEditingController idController = TextEditingController();
     final TextEditingController namaController = TextEditingController();
     final TextEditingController alamatController = TextEditingController();
     final TextEditingController nomorTeleponController =
@@ -209,11 +180,6 @@ class _CustomerPageState extends State<CustomerPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: idController,
-                decoration: const InputDecoration(labelText: 'ID Pelanggan'),
-                keyboardType: TextInputType.number,
-              ),
               TextField(
                 controller: namaController,
                 decoration: const InputDecoration(labelText: 'Nama'),
@@ -237,7 +203,6 @@ class _CustomerPageState extends State<CustomerPage> {
             ElevatedButton(
               onPressed: () {
                 _addCustomer(
-                  int.parse(idController.text),
                   namaController.text,
                   alamatController.text,
                   nomorTeleponController.text,
@@ -245,6 +210,60 @@ class _CustomerPageState extends State<CustomerPage> {
                 Navigator.pop(context);
               },
               child: const Text('Tambah'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _editCustomerDialog(Map<String, dynamic> customer) {
+    final TextEditingController namaController =
+        TextEditingController(text: customer['nama_pelanggan']);
+    final TextEditingController alamatController =
+        TextEditingController(text: customer['alamat']);
+    final TextEditingController nomorTeleponController =
+        TextEditingController(text: customer['nomor_telepon']);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Customer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: namaController,
+                decoration: const InputDecoration(labelText: 'Nama'),
+              ),
+              TextField(
+                controller: alamatController,
+                decoration: const InputDecoration(labelText: 'Alamat'),
+              ),
+              TextField(
+                controller: nomorTeleponController,
+                decoration: const InputDecoration(labelText: 'Nomor Telepon'),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _updateCustomer(
+                  customer['pelanggan_id'],
+                  namaController.text,
+                  alamatController.text,
+                  nomorTeleponController.text,
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Simpan'),
             ),
           ],
         );

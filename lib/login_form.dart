@@ -12,6 +12,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isObscured = true; // State untuk mengatur visibilitas password
 
   Future<void> _login() async {
     final username = _usernameController.text.trim();
@@ -140,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
               padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
               child: TextField(
                 controller: _passwordController,
-                obscureText: false,
+                obscureText: _isObscured, // Gunakan _isObscured
                 textAlign: TextAlign.start,
                 maxLines: 1,
                 style: TextStyle(
@@ -183,8 +184,19 @@ class _LoginPageState extends State<LoginPage> {
                       EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   prefixIcon:
                       Icon(Icons.lock, color: Color(0xff212435), size: 24),
-                  suffixIcon: Icon(Icons.visibility_off,
-                      color: Color(0xff212435), size: 24),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscured
+                          ? Icons.visibility_off
+                          : Icons.visibility, // Ganti ikon
+                      color: Color(0xff212435),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isObscured = !_isObscured; // Toggle state
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
@@ -194,7 +206,7 @@ class _LoginPageState extends State<LoginPage> {
                 alignment: Alignment(0.0, 0.2),
                 child: MaterialButton(
                   onPressed: _login,
-                  color: Color(0xff614817),
+                  color: const Color.fromARGB(255, 148, 46, 136),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20.0),
