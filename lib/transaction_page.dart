@@ -65,76 +65,88 @@ void _showReceipt(double totalHarga, String customerName) {
   final DateTime now = DateTime.now();
   final String formattedDate = "${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}:${now.second}";
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text('Struk Pembayaran', textAlign: TextAlign.center),
-        content: Container(
-          width: double.maxFinite,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black.withOpacity(0.2)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Text(
-                  'INOV CAFE',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+showDialog(
+  context: context,
+  builder: (context) {
+    return AlertDialog(
+      title: const Text('Struk Pembayaran', textAlign: TextAlign.center),
+      content: Container(
+        width: double.maxFinite,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Text(
+                'INOV CAFE',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
-              const Divider(),
-              Center(child: Text('Struk Pembayaran', style: TextStyle(fontSize: 16))),
-              const Divider(),
-              Text('Nama Pelanggan: $customerName'),
-              const SizedBox(height: 8),
-              Text('Tanggal: $formattedDate'),
-              const SizedBox(height: 10),
-              const Divider(),
-              ...cart.map((item) => Padding(
+            ),
+            const Divider(),
+            Center(child: Text('Struk Pembayaran', style: TextStyle(fontSize: 16))),
+            const Divider(),
+            Text('Nama Pelanggan: $customerName'),
+            const SizedBox(height: 8),
+            Text('Tanggal: $formattedDate'),
+            const SizedBox(height: 10),
+            const Divider(),
+            // Menampilkan list barang dengan quantity dan harga
+            ...cart.map((item) {
+              double price = item['harga']; // Harga satuan (ubah field ke harga)
+              int qty = item['stok']; // Stok (ubah field ke stok)
+              double subtotal = price * qty; // Menghitung subtotal
+
+              return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${item['nama_produk']}'),
-                    Text('Qty: ${item['jumlah']}'),
-                    Text('Rp. ${item['subtotal']}'),
+                    // Nama barang
+                    Expanded(child: Text('${item['nama_produk']}')),
+                    // Jika quantity lebih dari 1, tampilkan perhitungan
+                    Text(qty > 1
+                        ? 'Rp. $price x $qty = Rp. $subtotal'
+                        : 'Rp. $price'), // Menampilkan harga satuan jika qty 1
                   ],
                 ),
-              )),
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Total:'),
-                    Text(
-                      'Rp. $totalHarga',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+              );
+            }).toList(),
+            const Divider(),
+            // Menampilkan total harga
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total:'),
+                  Text(
+                    'Rp. $totalHarga', // Total harga keseluruhan
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Divider(),
-              const SizedBox(height: 10),
-              Center(child: Text('Terima kasih atas kunjungannya!', style: TextStyle(fontStyle: FontStyle.italic))),
-            ],
-          ),
+            ),
+            const Divider(),
+            const SizedBox(height: 10),
+            Center(child: Text('Terima kasih atas kunjungannya!', style: TextStyle(fontStyle: FontStyle.italic))),
+          ],
         ),
-      );
-    },
-  );
+      ),
+    );
+  },
+);
+
 }
 
 
